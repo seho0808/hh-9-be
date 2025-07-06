@@ -1,11 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { PointService } from './point.service';
-import { UserPointTable } from '../database/userpoint.table';
-import { PointHistoryTable } from '../database/pointhistory.table';
 import { BadRequestException, InternalServerErrorException } from '@nestjs/common';
-import { TransactionType } from './point.model';
+import { TransactionType } from '../point.model';
 import { PointPolicy } from './policy/point.policy';
-import { PointRepository } from './repository/point.repository';
+import { PointRepository } from '../repository/point.repository';
 
 describe('PointService', () => {
   let service: PointService;
