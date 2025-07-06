@@ -52,17 +52,41 @@ export class PointController {
     return histories;
   }
 
-  /**
-   * TODO - 특정 유저의 포인트를 충전하는 기능을 작성해주세요.
-   */
   @Patch(':id/charge')
   async charge(
-    @Param('id') id,
+    @Param('id', ParsePositiveIntPipe) id: number,
     @Body(ValidationPipe) pointDto: PointDto,
   ): Promise<UserPoint> {
-    const userId = Number.parseInt(id);
+    // TODO: 추후 서비스 레이어로 리팩토링 시 여러개의 함수로 분리해야 함
     const amount = pointDto.amount;
-    return { id: userId, point: amount, updateMillis: Date.now() };
+    if (amount < 1 || amount > 10_000_000) {
+      throw new BadRequestException();
+    }
+
+    let currentPoint: UserPoint;
+
+    try {
+      currentPoint = await this.userDb.selectById(id);
+    } catch (error) {
+      throw new InternalServerErrorException();
+    }
+
+    const newPoint = currentPoint.point + amount;
+
+    if (newPoint > 10_000_000) {
+      throw new BadRequestException();
+    }
+
+    let updatedPoint: UserPoint;
+
+    try {
+      updatedPoint = await this.userDb.insertOrUpdate(id, newPoint);
+      await this.historyDb.insert(id, amount, TransactionType.CHARGE, Date.now());
+    } catch (error) {
+      throw new InternalServerErrorException();
+    }
+
+    return updatedPoint;
   }
 
   /**
