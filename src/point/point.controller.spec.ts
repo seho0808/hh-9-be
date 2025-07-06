@@ -44,7 +44,7 @@ describe('PointController', () => {
           updateMillis: 123456789,
         });
 
-        const result = await controller.point('1');
+        const result = await controller.point(1);
 
         expect(result).toEqual({
           id: 1,
@@ -60,7 +60,7 @@ describe('PointController', () => {
           updateMillis: 123456789,
         });
 
-        const result = await controller.point('1');
+        const result = await controller.point(1);
 
         expect(result).toEqual({
           id: 1,
@@ -76,7 +76,7 @@ describe('PointController', () => {
           updateMillis: 123456789,
         });
 
-        const result = await controller.point('1');
+        const result = await controller.point(1);
 
         expect(result).toEqual({
           id: 1,
@@ -94,7 +94,7 @@ describe('PointController', () => {
           updateMillis: 123456789,
         });
 
-        await expect(controller.point('1')).rejects.toThrow(InternalServerErrorException);
+        await expect(controller.point(1)).rejects.toThrow(InternalServerErrorException);
       });
 
       it('포인트가 최대 허용값 초과 시 500 에러 발생', async () => {
@@ -104,37 +104,7 @@ describe('PointController', () => {
           updateMillis: 123456789,
         });
 
-        await expect(controller.point('1')).rejects.toThrow(InternalServerErrorException);
-      });
-    });
-
-    describe('❌ 입력 유효성 검사 (Validation)', () => {
-      it('id가 숫자가 아닐 경우 400 에러 발생', async () => {
-        await expect(controller.point('abc')).rejects.toThrow(BadRequestException);
-      });
-
-      it('id가 음수일 경우 400 에러 발생', async () => {
-        await expect(controller.point('-1')).rejects.toThrow(BadRequestException);
-      });
-
-      it('id가 0일 경우 400 에러 발생', async () => {
-        await expect(controller.point('0')).rejects.toThrow(BadRequestException);
-      });
-
-      it('id가 빈 문자열일 경우 400 에러 발생', async () => {
-        await expect(controller.point('')).rejects.toThrow(BadRequestException);
-      });
-
-      it('id가 문자열이 아닐 경우 400 에러 발생', async () => {
-        await expect(controller.point(1)).rejects.toThrow(BadRequestException);
-      });
-
-      it('id가 null일 경우 400 에러 발생', async () => {
-        await expect(controller.point(null)).rejects.toThrow(BadRequestException);
-      });
-
-      it('id가 undefined일 경우 400 에러 발생', async () => {
-        await expect(controller.point(undefined)).rejects.toThrow(BadRequestException);
+        await expect(controller.point(1)).rejects.toThrow(InternalServerErrorException);
       });
     });
 
@@ -142,7 +112,7 @@ describe('PointController', () => {
       it('DB에서 예외가 발생하면 InternalServerError 발생', async () => {
         jest.spyOn(userPointTable, 'selectById').mockRejectedValue(new Error('DB error'));
 
-        await expect(controller.point('1')).rejects.toThrow(InternalServerErrorException);
+        await expect(controller.point(1)).rejects.toThrow(InternalServerErrorException);
       });
     });
   });
