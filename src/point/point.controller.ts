@@ -1,8 +1,18 @@
-import { Body, Controller, Get, Param, Patch, ValidationPipe } from '@nestjs/common';
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Get,
+  InternalServerErrorException,
+  Param,
+  Patch,
+  ValidationPipe,
+} from '@nestjs/common';
 import { PointHistory, TransactionType, UserPoint } from './point.model';
 import { UserPointTable } from 'src/database/userpoint.table';
 import { PointHistoryTable } from 'src/database/pointhistory.table';
 import { PointBody as PointDto } from './point.dto';
+import { ParsePositiveIntPipe } from 'src/common/pipes/parse-positive-int.pipe';
 
 @Controller('/point')
 export class PointController {
@@ -11,13 +21,17 @@ export class PointController {
     private readonly historyDb: PointHistoryTable,
   ) {}
 
-  /**
-   * TODO - 특정 유저의 포인트를 조회하는 기능을 작성해주세요.
-   */
   @Get(':id')
-  async point(@Param('id') ids): Promise<UserPoint> {
-    const userId = Number.parseInt(ids);
-    return { id: userId, point: 0, updateMillis: Date.now() };
+  async point(@Param('id', ParsePositiveIntPipe) id: number): Promise<UserPoint> {
+    const userPoint = await this.userDb.selectById(id).catch(() => {
+      throw new InternalServerErrorException();
+    });
+
+    if (userPoint.point < 0 || userPoint.point > 10_000_000) {
+      throw new InternalServerErrorException();
+    }
+
+    return userPoint;
   }
 
   /**
