@@ -4,43 +4,38 @@ import { UserPointTable } from '../database/userpoint.table';
 import { PointHistoryTable } from '../database/pointhistory.table';
 import { BadRequestException, InternalServerErrorException } from '@nestjs/common';
 import { TransactionType } from './point.model';
+import { PointPolicy } from './policy/point.policy';
+import { PointRepository } from './repository/point.repository';
 
 describe('PointService', () => {
   let service: PointService;
-  let userPointTable: UserPointTable;
-  let pointHistoryTable: PointHistoryTable;
+  let pointRepository: PointRepository;
 
   beforeEach(async () => {
     jest.restoreAllMocks();
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         PointService,
+        PointPolicy,
         {
-          provide: UserPointTable,
+          provide: PointRepository,
           useValue: {
-            selectById: jest.fn(),
-            insertOrUpdate: jest.fn(),
-          },
-        },
-        {
-          provide: PointHistoryTable,
-          useValue: {
-            insert: jest.fn(),
-            selectAllByUserId: jest.fn(),
+            getUserPoint: jest.fn(),
+            getHistories: jest.fn(),
+            updatePointWithHistory: jest.fn(),
           },
         },
       ],
     }).compile();
 
     service = module.get<PointService>(PointService);
-    userPointTable = module.get<UserPointTable>(UserPointTable);
-    pointHistoryTable = module.get<PointHistoryTable>(PointHistoryTable);
+    pointRepository = module.get<PointRepository>(PointRepository);
   });
 
   describe('getPoint', () => {
     describe('😊 정상 작동 (Happy Path & Passing Edge Cases)', () => {
       it('포인트가 100일 경우 정상적으로 반환됨', async () => {
-        jest.spyOn(userPointTable, 'selectById').mockResolvedValue({
+        jest.spyOn(pointRepository, 'getUserPoint').mockResolvedValue({
           id: 1,
           point: 100,
           updateMillis: 123456789,
@@ -56,7 +51,7 @@ describe('PointService', () => {
       });
 
       it('포인트가 0일 경우에도 정상 반환됨', async () => {
-        jest.spyOn(userPointTable, 'selectById').mockResolvedValue({
+        jest.spyOn(pointRepository, 'getUserPoint').mockResolvedValue({
           id: 1,
           point: 0,
           updateMillis: 123456789,
@@ -72,7 +67,7 @@ describe('PointService', () => {
       });
 
       it('포인트가 최대 허용값(10,000,000)일 때도 정상 반환됨', async () => {
-        jest.spyOn(userPointTable, 'selectById').mockResolvedValue({
+        jest.spyOn(pointRepository, 'getUserPoint').mockResolvedValue({
           id: 1,
           point: 10_000_000,
           updateMillis: 123456789,
@@ -90,7 +85,7 @@ describe('PointService', () => {
 
     describe('💼 정책 예외 (Business Rule Violation)', () => {
       it('포인트가 음수일 경우 500 에러 발생', async () => {
-        jest.spyOn(userPointTable, 'selectById').mockResolvedValue({
+        jest.spyOn(pointRepository, 'getUserPoint').mockResolvedValue({
           id: 1,
           point: -1,
           updateMillis: 123456789,
@@ -100,7 +95,7 @@ describe('PointService', () => {
       });
 
       it('포인트가 최대 허용값 초과 시 500 에러 발생', async () => {
-        jest.spyOn(userPointTable, 'selectById').mockResolvedValue({
+        jest.spyOn(pointRepository, 'getUserPoint').mockResolvedValue({
           id: 1,
           point: 10_000_001,
           updateMillis: 123456789,
@@ -111,8 +106,10 @@ describe('PointService', () => {
     });
 
     describe('💥 시스템 예외 (Unexpected Errors)', () => {
-      it('DB에서 예외가 발생하면 InternalServerError 발생', async () => {
-        jest.spyOn(userPointTable, 'selectById').mockRejectedValue(new Error('DB error'));
+      it('Repository에서 예외가 발생하면 InternalServerError 발생', async () => {
+        jest
+          .spyOn(pointRepository, 'getUserPoint')
+          .mockRejectedValue(new InternalServerErrorException());
 
         await expect(service.getPoint(1)).rejects.toThrow(InternalServerErrorException);
       });
@@ -130,7 +127,7 @@ describe('PointService', () => {
           timeMillis: 123456789,
         };
         jest
-          .spyOn(pointHistoryTable, 'selectAllByUserId')
+          .spyOn(pointRepository, 'getHistories')
           .mockResolvedValue([mockedPointHistory]);
 
         const result = await service.getHistory(1);
@@ -154,7 +151,7 @@ describe('PointService', () => {
           timeMillis: 123456789,
         };
         jest
-          .spyOn(pointHistoryTable, 'selectAllByUserId')
+          .spyOn(pointRepository, 'getHistories')
           .mockResolvedValue([mockedPointHistory1, mockedPointHistory2]);
 
         const result = await service.getHistory(1);
@@ -164,10 +161,10 @@ describe('PointService', () => {
     });
 
     describe('💥 시스템 예외 (Unexpected Errors)', () => {
-      it('DB에서 예외가 발생하면 InternalServerError 발생', async () => {
+      it('Repository에서 예외가 발생하면 InternalServerError 발생', async () => {
         jest
-          .spyOn(pointHistoryTable, 'selectAllByUserId')
-          .mockRejectedValue(new Error('DB error'));
+          .spyOn(pointRepository, 'getHistories')
+          .mockRejectedValue(new InternalServerErrorException());
 
         await expect(service.getHistory(1)).rejects.toThrow(InternalServerErrorException);
       });
@@ -177,69 +174,78 @@ describe('PointService', () => {
   describe('chargePoint', () => {
     describe('😊 정상 작동 (Happy Path & Passing Edge Cases)', () => {
       it('포인트가 정상적으로 충전됨', async () => {
-        jest.spyOn(userPointTable, 'selectById').mockResolvedValue({
+        jest.spyOn(pointRepository, 'getUserPoint').mockResolvedValue({
           id: 1,
           point: 100,
+          updateMillis: 123456789,
+        });
+        jest.spyOn(pointRepository, 'updatePointWithHistory').mockResolvedValue({
+          id: 1,
+          point: 200,
           updateMillis: 123456789,
         });
         jest.spyOn(Date, 'now').mockReturnValue(123456789);
 
         await service.chargePoint(1, 100);
 
-        expect(userPointTable.insertOrUpdate).toHaveBeenCalledWith(1, 200);
-
-        expect(pointHistoryTable.insert).toHaveBeenCalledWith(
+        expect(pointRepository.updatePointWithHistory).toHaveBeenCalledWith(
           1,
+          200,
           100,
           TransactionType.CHARGE,
-          123456789,
         );
       });
 
       it('최소 충전 금액이 정상적으로 충전됨', async () => {
-        jest.spyOn(userPointTable, 'selectById').mockResolvedValue({
+        jest.spyOn(pointRepository, 'getUserPoint').mockResolvedValue({
           id: 1,
           point: 100,
+          updateMillis: 123456789,
+        });
+        jest.spyOn(pointRepository, 'updatePointWithHistory').mockResolvedValue({
+          id: 1,
+          point: 101,
           updateMillis: 123456789,
         });
         jest.spyOn(Date, 'now').mockReturnValue(123456789);
 
         await service.chargePoint(1, 1);
 
-        expect(userPointTable.insertOrUpdate).toHaveBeenCalledWith(1, 101);
-
-        expect(pointHistoryTable.insert).toHaveBeenCalledWith(
+        expect(pointRepository.updatePointWithHistory).toHaveBeenCalledWith(
           1,
+          101,
           1,
           TransactionType.CHARGE,
-          123456789,
         );
       });
 
       it('최대 충전 금액이 정상적으로 충전됨', async () => {
-        jest.spyOn(userPointTable, 'selectById').mockResolvedValue({
+        jest.spyOn(pointRepository, 'getUserPoint').mockResolvedValue({
           id: 1,
           point: 0,
+          updateMillis: 123456789,
+        });
+        jest.spyOn(pointRepository, 'updatePointWithHistory').mockResolvedValue({
+          id: 1,
+          point: 10_000_000,
           updateMillis: 123456789,
         });
         jest.spyOn(Date, 'now').mockReturnValue(123456789);
 
         await service.chargePoint(1, 10_000_000);
 
-        expect(pointHistoryTable.insert).toHaveBeenCalledWith(
+        expect(pointRepository.updatePointWithHistory).toHaveBeenCalledWith(
           1,
           10_000_000,
+          10_000_000,
           TransactionType.CHARGE,
-          123456789,
         );
-
-        expect(userPointTable.insertOrUpdate).toHaveBeenCalledWith(1, 10_000_000);
       });
     });
 
     describe('💼 정책 예외 (Business Rule Violation)', () => {
       it('충전 후 총 포인트가 10,000,000P 초과 시 400 에러 발생', async () => {
-        jest.spyOn(userPointTable, 'selectById').mockResolvedValue({
+        jest.spyOn(pointRepository, 'getUserPoint').mockResolvedValue({
           id: 1,
           point: 10_000_000,
           updateMillis: 123456789,
@@ -255,8 +261,10 @@ describe('PointService', () => {
     });
 
     describe('💥 시스템 예외 (Unexpected Errors)', () => {
-      it('DB에서 예외가 발생하면 InternalServerError 발생', async () => {
-        jest.spyOn(userPointTable, 'selectById').mockRejectedValue(new Error('DB error'));
+      it('Repository에서 예외가 발생하면 InternalServerError 발생', async () => {
+        jest
+          .spyOn(pointRepository, 'getUserPoint')
+          .mockRejectedValue(new InternalServerErrorException());
 
         await expect(service.chargePoint(1, 100)).rejects.toThrow(
           InternalServerErrorException,
@@ -268,72 +276,81 @@ describe('PointService', () => {
   describe('usePoint', () => {
     describe('😊 정상 작동 (Happy Path & Passing Edge Cases)', () => {
       it('포인트가 정상적으로 사용됨', async () => {
-        jest.spyOn(userPointTable, 'selectById').mockResolvedValue({
+        jest.spyOn(pointRepository, 'getUserPoint').mockResolvedValue({
           id: 1,
           point: 1000,
           updateMillis: 123456789,
         });
+        jest.spyOn(pointRepository, 'getHistories').mockResolvedValue([]);
+        jest.spyOn(pointRepository, 'updatePointWithHistory').mockResolvedValue({
+          id: 1,
+          point: 900,
+          updateMillis: 123456789,
+        });
         jest.spyOn(Date, 'now').mockReturnValue(123456789);
-        jest.spyOn(pointHistoryTable, 'selectAllByUserId').mockResolvedValue([]);
 
         await service.usePoint(1, 100);
 
-        expect(userPointTable.insertOrUpdate).toHaveBeenCalledWith(1, 900);
-
-        expect(pointHistoryTable.insert).toHaveBeenCalledWith(
+        expect(pointRepository.updatePointWithHistory).toHaveBeenCalledWith(
           1,
+          900,
           100,
           TransactionType.USE,
-          123456789,
         );
       });
 
       it('최소 사용 단위(100P) 금액이 정상적으로 사용됨', async () => {
-        jest.spyOn(userPointTable, 'selectById').mockResolvedValue({
+        jest.spyOn(pointRepository, 'getUserPoint').mockResolvedValue({
           id: 1,
           point: 100,
           updateMillis: 123456789,
         });
+        jest.spyOn(pointRepository, 'getHistories').mockResolvedValue([]);
+        jest.spyOn(pointRepository, 'updatePointWithHistory').mockResolvedValue({
+          id: 1,
+          point: 0,
+          updateMillis: 123456789,
+        });
         jest.spyOn(Date, 'now').mockReturnValue(123456789);
-        jest.spyOn(pointHistoryTable, 'selectAllByUserId').mockResolvedValue([]);
 
         await service.usePoint(1, 100);
 
-        expect(userPointTable.insertOrUpdate).toHaveBeenCalledWith(1, 0);
-
-        expect(pointHistoryTable.insert).toHaveBeenCalledWith(
+        expect(pointRepository.updatePointWithHistory).toHaveBeenCalledWith(
           1,
+          0,
           100,
           TransactionType.USE,
-          123456789,
         );
       });
 
       it('최대 사용 금액(10,000P)이 정상적으로 사용됨', async () => {
-        jest.spyOn(userPointTable, 'selectById').mockResolvedValue({
+        jest.spyOn(pointRepository, 'getUserPoint').mockResolvedValue({
           id: 1,
           point: 5_000_000,
           updateMillis: 123456789,
         });
+        jest.spyOn(pointRepository, 'getHistories').mockResolvedValue([]);
+        jest.spyOn(pointRepository, 'updatePointWithHistory').mockResolvedValue({
+          id: 1,
+          point: 4_990_000,
+          updateMillis: 123456789,
+        });
         jest.spyOn(Date, 'now').mockReturnValue(123456789);
-        jest.spyOn(pointHistoryTable, 'selectAllByUserId').mockResolvedValue([]);
 
         await service.usePoint(1, 10_000);
 
-        expect(userPointTable.insertOrUpdate).toHaveBeenCalledWith(1, 4_990_000);
-
-        expect(pointHistoryTable.insert).toHaveBeenCalledWith(
+        expect(pointRepository.updatePointWithHistory).toHaveBeenCalledWith(
           1,
+          4_990_000,
           10_000,
           TransactionType.USE,
-          123456789,
         );
       });
     });
 
     describe('💼 정책 예외 (Business Rule Violation)', () => {
       it('포인트가 최소 사용 단위(100P)보다 작을 경우 400 에러 발생', async () => {
-        jest.spyOn(userPointTable, 'selectById').mockResolvedValue({
+        jest.spyOn(pointRepository, 'getUserPoint').mockResolvedValue({
           id: 1,
           point: 1000,
           updateMillis: 123456789,
@@ -346,8 +363,8 @@ describe('PointService', () => {
       });
 
       it('포인트 사용 후 포인트가 음수가 될 경우 400 에러 발생', async () => {
-        jest.spyOn(pointHistoryTable, 'selectAllByUserId').mockResolvedValue([]);
-        jest.spyOn(userPointTable, 'selectById').mockResolvedValue({
+        jest.spyOn(pointRepository, 'getHistories').mockResolvedValue([]);
+        jest.spyOn(pointRepository, 'getUserPoint').mockResolvedValue({
           id: 1,
           point: 100,
           updateMillis: 123456789,
@@ -357,13 +374,13 @@ describe('PointService', () => {
       });
 
       it('하루 최대 사용 가능 포인트를 초과할 경우 400 에러 발생', async () => {
-        jest.spyOn(userPointTable, 'selectById').mockResolvedValue({
+        jest.spyOn(pointRepository, 'getUserPoint').mockResolvedValue({
           id: 1,
           point: 100000,
           updateMillis: 123456789,
         });
 
-        jest.spyOn(pointHistoryTable, 'selectAllByUserId').mockResolvedValue([
+        jest.spyOn(pointRepository, 'getHistories').mockResolvedValue([
           {
             id: 1,
             userId: 1,
@@ -386,8 +403,10 @@ describe('PointService', () => {
     });
 
     describe('💥 시스템 예외 (Unexpected Errors)', () => {
-      it('DB에서 예외가 발생하면 InternalServerError 발생', async () => {
-        jest.spyOn(userPointTable, 'selectById').mockRejectedValue(new Error('DB error'));
+      it('Repository에서 예외가 발생하면 InternalServerError 발생', async () => {
+        jest
+          .spyOn(pointRepository, 'getUserPoint')
+          .mockRejectedValue(new InternalServerErrorException());
 
         await expect(service.usePoint(1, 100)).rejects.toThrow(
           InternalServerErrorException,
