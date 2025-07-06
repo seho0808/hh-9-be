@@ -89,16 +89,55 @@ export class PointController {
     return updatedPoint;
   }
 
-  /**
-   * TODO - 특정 유저의 포인트를 사용하는 기능을 작성해주세요.
-   */
   @Patch(':id/use')
   async use(
-    @Param('id') id,
+    @Param('id', ParsePositiveIntPipe) id: number,
     @Body(ValidationPipe) pointDto: PointDto,
   ): Promise<UserPoint> {
-    const userId = Number.parseInt(id);
+    // TODO: 추후 서비스 레이어로 리팩토링 시 여러개의 함수로 분리해야 함
     const amount = pointDto.amount;
-    return { id: userId, point: amount, updateMillis: Date.now() };
+    if (amount < 100 || amount > 10_000_000 || amount % 100 !== 0) {
+      throw new BadRequestException();
+    }
+
+    let currentPoint: UserPoint;
+    let histories: PointHistory[];
+
+    try {
+      currentPoint = await this.userDb.selectById(id);
+      histories = await this.historyDb.selectAllByUserId(id);
+    } catch (error) {
+      throw new InternalServerErrorException();
+    }
+
+    const pointsUsedToday = histories
+      .filter(
+        history =>
+          history.type === TransactionType.USE &&
+          history.timeMillis > Date.now() - 24 * 60 * 60 * 1000,
+      )
+      .reduce((acc, history) => acc + history.amount, 0);
+    const newPointsUsedToday = pointsUsedToday + amount;
+
+    if (newPointsUsedToday > 50000) {
+      throw new BadRequestException();
+    }
+
+    const newPoint = currentPoint.point - amount;
+
+    if (newPoint < 0) {
+      throw new BadRequestException();
+    }
+
+    let updatedPoint: UserPoint;
+
+    try {
+      updatedPoint = await this.userDb.insertOrUpdate(id, newPoint);
+      await this.historyDb.insert(id, amount, TransactionType.USE, Date.now());
+    } catch (error) {
+      throw new InternalServerErrorException();
+    }
+
+    return updatedPoint;
   }
 }
