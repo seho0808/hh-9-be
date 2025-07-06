@@ -1,8 +1,8 @@
 import { Body, Controller, Get, Param, Patch, ValidationPipe } from '@nestjs/common';
-import { PointHistory, UserPoint } from './point.model';
-import { PointBody as PointDto } from './point.dto';
+import { PointHistory, UserPoint } from '../point.model';
+import { PointBody as PointDto } from '../point.dto';
 import { ParsePositiveIntPipe } from 'src/common/pipes/parse-positive-int.pipe';
-import { PointService } from './point.service';
+import { PointService } from '../service/point.service';
 
 @Controller('/point')
 export class PointController {
