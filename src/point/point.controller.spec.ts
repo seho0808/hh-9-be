@@ -172,4 +172,101 @@ describe('PointController', () => {
       });
     });
   });
+
+  describe('PATCH /point/:id/charge', () => {
+    describe('😊 정상 작동 (Happy Path & Passing Edge Cases)', () => {
+      it('포인트가 정상적으로 충전됨', async () => {
+        jest.spyOn(userPointTable, 'selectById').mockResolvedValue({
+          id: 1,
+          point: 100,
+          updateMillis: 123456789,
+        });
+        jest.spyOn(Date, 'now').mockReturnValue(123456789);
+
+        await controller.charge(1, { amount: 100 });
+
+        expect(userPointTable.insertOrUpdate).toHaveBeenCalledWith(1, 200);
+
+        expect(pointHistoryTable.insert).toHaveBeenCalledWith(
+          1,
+          100,
+          TransactionType.CHARGE,
+          123456789,
+        );
+      });
+
+      it('최소 충전 금액이 정상적으로 충전됨', async () => {
+        jest.spyOn(userPointTable, 'selectById').mockResolvedValue({
+          id: 1,
+          point: 100,
+          updateMillis: 123456789,
+        });
+        jest.spyOn(Date, 'now').mockReturnValue(123456789);
+
+        await controller.charge(1, { amount: 1 });
+
+        expect(userPointTable.insertOrUpdate).toHaveBeenCalledWith(1, 101);
+
+        expect(pointHistoryTable.insert).toHaveBeenCalledWith(
+          1,
+          1,
+          TransactionType.CHARGE,
+          123456789,
+        );
+      });
+
+      it('최대 충전 금액이 정상적으로 충전됨', async () => {
+        jest.spyOn(userPointTable, 'selectById').mockResolvedValue({
+          id: 1,
+          point: 0,
+          updateMillis: 123456789,
+        });
+        jest.spyOn(Date, 'now').mockReturnValue(123456789);
+
+        await controller.charge(1, { amount: 10_000_000 });
+
+        expect(pointHistoryTable.insert).toHaveBeenCalledWith(
+          1,
+          10_000_000,
+          TransactionType.CHARGE,
+          123456789,
+        );
+
+        expect(userPointTable.insertOrUpdate).toHaveBeenCalledWith(1, 10_000_000);
+      });
+    });
+
+    describe('💼 정책 예외 (Business Rule Violation)', () => {
+      it('충전 후 총 포인트가 10,000,000P 초과 시 400 에러 발생', async () => {
+        jest.spyOn(userPointTable, 'selectById').mockResolvedValue({
+          id: 1,
+          point: 10_000_000,
+          updateMillis: 123456789,
+        });
+
+        await expect(controller.charge(1, { amount: 1 })).rejects.toThrow(
+          BadRequestException,
+        );
+      });
+
+      it('포인트가 최소 충전 가능 포인트보다 작을 경우 400 에러 발생', async () => {
+        await expect(controller.charge(1, { amount: -1 })).rejects.toThrow(
+          BadRequestException,
+        );
+        await expect(controller.charge(1, { amount: 0 })).rejects.toThrow(
+          BadRequestException,
+        );
+      });
+    });
+
+    describe('💥 시스템 예외 (Unexpected Errors)', () => {
+      it('DB에서 예외가 발생하면 InternalServerError 발생', async () => {
+        jest.spyOn(userPointTable, 'selectById').mockRejectedValue(new Error('DB error'));
+
+        await expect(controller.charge(1, { amount: 100 })).rejects.toThrow(
+          InternalServerErrorException,
+        );
+      });
+    });
+  });
 });
