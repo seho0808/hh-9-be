@@ -11,6 +11,7 @@ describe('PointController', () => {
   let pointHistoryTable: PointHistoryTable;
 
   beforeEach(async () => {
+    jest.restoreAllMocks();
     const module: TestingModule = await Test.createTestingModule({
       controllers: [PointController],
       providers: [
@@ -264,6 +265,149 @@ describe('PointController', () => {
         jest.spyOn(userPointTable, 'selectById').mockRejectedValue(new Error('DB error'));
 
         await expect(controller.charge(1, { amount: 100 })).rejects.toThrow(
+          InternalServerErrorException,
+        );
+      });
+    });
+  });
+
+  describe('PATCH /point/:id/use', () => {
+    describe('😊 정상 작동 (Happy Path & Passing Edge Cases)', () => {
+      it('포인트가 정상적으로 사용됨', async () => {
+        jest.spyOn(userPointTable, 'selectById').mockResolvedValue({
+          id: 1,
+          point: 1000,
+          updateMillis: 123456789,
+        });
+        jest.spyOn(Date, 'now').mockReturnValue(123456789);
+        jest.spyOn(pointHistoryTable, 'selectAllByUserId').mockResolvedValue([]);
+
+        await controller.use(1, { amount: 100 });
+
+        expect(userPointTable.insertOrUpdate).toHaveBeenCalledWith(1, 900);
+
+        expect(pointHistoryTable.insert).toHaveBeenCalledWith(
+          1,
+          100,
+          TransactionType.USE,
+          123456789,
+        );
+      });
+
+      it('최소 사용 단위(100P) 금액이 정상적으로 사용됨', async () => {
+        jest.spyOn(userPointTable, 'selectById').mockResolvedValue({
+          id: 1,
+          point: 100,
+          updateMillis: 123456789,
+        });
+        jest.spyOn(Date, 'now').mockReturnValue(123456789);
+        jest.spyOn(pointHistoryTable, 'selectAllByUserId').mockResolvedValue([]);
+
+        await controller.use(1, { amount: 100 });
+
+        expect(userPointTable.insertOrUpdate).toHaveBeenCalledWith(1, 0);
+
+        expect(pointHistoryTable.insert).toHaveBeenCalledWith(
+          1,
+          100,
+          TransactionType.USE,
+          123456789,
+        );
+      });
+
+      it('최대 사용 금액(10,000P)이 정상적으로 사용됨', async () => {
+        jest.spyOn(userPointTable, 'selectById').mockResolvedValue({
+          id: 1,
+          point: 5_000_000,
+          updateMillis: 123456789,
+        });
+        jest.spyOn(Date, 'now').mockReturnValue(123456789);
+        jest.spyOn(pointHistoryTable, 'selectAllByUserId').mockResolvedValue([]);
+
+        await controller.use(1, { amount: 10_000 });
+
+        expect(userPointTable.insertOrUpdate).toHaveBeenCalledWith(1, 4_990_000);
+
+        expect(pointHistoryTable.insert).toHaveBeenCalledWith(
+          1,
+          10_000,
+          TransactionType.USE,
+          123456789,
+        );
+      });
+    });
+
+    describe('💼 정책 예외 (Business Rule Violation)', () => {
+      it('포인트가 최소 사용 단위(100P)보다 작을 경우 400 에러 발생', async () => {
+        jest.spyOn(userPointTable, 'selectById').mockResolvedValue({
+          id: 1,
+          point: 1000,
+          updateMillis: 123456789,
+        });
+
+        await expect(controller.use(1, { amount: 99 })).rejects.toThrow(
+          BadRequestException,
+        );
+        await expect(controller.use(1, { amount: 0 })).rejects.toThrow(
+          BadRequestException,
+        );
+        await expect(controller.use(1, { amount: -1 })).rejects.toThrow(
+          BadRequestException,
+        );
+        await expect(controller.use(1, { amount: 101 })).rejects.toThrow(
+          BadRequestException,
+        );
+      });
+
+      it('포인트 사용 후 포인트가 음수가 될 경우 400 에러 발생', async () => {
+        jest.spyOn(pointHistoryTable, 'selectAllByUserId').mockResolvedValue([]);
+        jest.spyOn(userPointTable, 'selectById').mockResolvedValue({
+          id: 1,
+          point: 100,
+          updateMillis: 123456789,
+        });
+
+        await expect(controller.use(1, { amount: 200 })).rejects.toThrow(
+          BadRequestException,
+        );
+      });
+
+      it('하루 최대 사용 가능 포인트를 초과할 경우 400 에러 발생', async () => {
+        jest.spyOn(userPointTable, 'selectById').mockResolvedValue({
+          id: 1,
+          point: 100000,
+          updateMillis: 123456789,
+        });
+
+        jest.spyOn(pointHistoryTable, 'selectAllByUserId').mockResolvedValue([
+          {
+            id: 1,
+            userId: 1,
+            amount: 30000,
+            type: TransactionType.USE,
+            timeMillis: Date.now(),
+          },
+          {
+            id: 2,
+            userId: 1,
+            amount: 20000,
+            type: TransactionType.USE,
+            timeMillis: Date.now(),
+          },
+        ]);
+
+        // 이미 50000P를 사용했으므로 추가 사용 불가
+        await expect(controller.use(1, { amount: 100 })).rejects.toThrow(
+          BadRequestException,
+        );
+      });
+    });
+
+    describe('💥 시스템 예외 (Unexpected Errors)', () => {
+      it('DB에서 예외가 발생하면 InternalServerError 발생', async () => {
+        jest.spyOn(userPointTable, 'selectById').mockRejectedValue(new Error('DB error'));
+
+        await expect(controller.use(1, { amount: 100 })).rejects.toThrow(
           InternalServerErrorException,
         );
       });
