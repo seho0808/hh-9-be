@@ -23,9 +23,13 @@ export class PointController {
 
   @Get(':id')
   async point(@Param('id', ParsePositiveIntPipe) id: number): Promise<UserPoint> {
-    const userPoint = await this.userDb.selectById(id).catch(() => {
+    let userPoint: UserPoint;
+
+    try {
+      userPoint = await this.userDb.selectById(id);
+    } catch (error) {
       throw new InternalServerErrorException();
-    });
+    }
 
     if (userPoint.point < 0 || userPoint.point > 10_000_000) {
       throw new InternalServerErrorException();
@@ -34,13 +38,18 @@ export class PointController {
     return userPoint;
   }
 
-  /**
-   * TODO - 특정 유저의 포인트 충전/이용 내역을 조회하는 기능을 작성해주세요.
-   */
   @Get(':id/histories')
-  async history(@Param('id') id): Promise<PointHistory[]> {
-    const userId = Number.parseInt(id);
-    return [];
+  async history(@Param('id', ParsePositiveIntPipe) id: number): Promise<PointHistory[]> {
+    let histories: PointHistory[];
+    try {
+      histories = await this.historyDb.selectAllByUserId(id);
+    } catch (error) {
+      throw new InternalServerErrorException();
+    }
+
+    histories.sort((a, b) => b.timeMillis - a.timeMillis);
+
+    return histories;
   }
 
   /**
