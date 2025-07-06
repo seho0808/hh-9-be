@@ -23,9 +23,13 @@ export class PointController {
 
   @Get(':id')
   async point(@Param('id', ParsePositiveIntPipe) id: number): Promise<UserPoint> {
-    const userPoint = await this.userDb.selectById(id).catch(() => {
+    let userPoint: UserPoint;
+
+    try {
+userPoint = await this.userDb.selectById(id);
+    } catch (error) {
       throw new InternalServerErrorException();
-    });
+    }
 
     if (userPoint.point < 0 || userPoint.point > 10_000_000) {
       throw new InternalServerErrorException();
