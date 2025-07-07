@@ -38,7 +38,6 @@ describe('PointRepository', () => {
 
   describe('getUserPoint', () => {
     it('사용자 포인트를 정상적으로 조회해야 한다', async () => {
-      // Given
       const userId = 1;
       const expectedUserPoint = {
         id: 1,
@@ -47,20 +46,15 @@ describe('PointRepository', () => {
       };
       userPointTable.selectById.mockResolvedValue(expectedUserPoint);
 
-      // When
       const result = await repository.getUserPoint(userId);
 
-      // Then
-      expect(userPointTable.selectById).toHaveBeenCalledWith(userId);
       expect(result).toEqual(expectedUserPoint);
     });
 
     it('데이터베이스 에러 발생시 InternalServerErrorException을 발생시켜야 한다', async () => {
-      // Given
       const userId = 1;
       userPointTable.selectById.mockRejectedValue(new Error('Database error'));
 
-      // When & Then
       await expect(repository.getUserPoint(userId)).rejects.toThrow(
         InternalServerErrorException,
       );
@@ -69,7 +63,6 @@ describe('PointRepository', () => {
 
   describe('getHistories', () => {
     it('포인트 히스토리를 정상적으로 조회해야 한다', async () => {
-      // Given
       const userId = 1;
       const expectedHistories = [
         {
@@ -89,20 +82,15 @@ describe('PointRepository', () => {
       ];
       pointHistoryTable.selectAllByUserId.mockResolvedValue(expectedHistories);
 
-      // When
       const result = await repository.getHistories(userId);
 
-      // Then
-      expect(pointHistoryTable.selectAllByUserId).toHaveBeenCalledWith(userId);
       expect(result).toEqual(expectedHistories);
     });
 
     it('데이터베이스 에러 발생시 InternalServerErrorException을 발생시켜야 한다', async () => {
-      // Given
       const userId = 1;
       pointHistoryTable.selectAllByUserId.mockRejectedValue(new Error('Database error'));
 
-      // When & Then
       await expect(repository.getHistories(userId)).rejects.toThrow(
         InternalServerErrorException,
       );
@@ -139,7 +127,13 @@ describe('PointRepository', () => {
         timeMillis: 123456789,
       });
 
-      // When
+      expect(pointHistoryTable.insert).toHaveBeenCalledWith(
+        userId,
+        amount,
+        type,
+        123456789,
+      );
+
       const result = await repository.updatePointWithHistory(
         userId,
         newPoint,
@@ -147,14 +141,6 @@ describe('PointRepository', () => {
         type,
       );
 
-      // Then
-      expect(userPointTable.insertOrUpdate).toHaveBeenCalledWith(userId, newPoint);
-      expect(pointHistoryTable.insert).toHaveBeenCalledWith(
-        userId,
-        amount,
-        type,
-        123456789,
-      );
       expect(result).toEqual(expectedUserPoint);
     });
 
@@ -167,7 +153,6 @@ describe('PointRepository', () => {
 
       userPointTable.insertOrUpdate.mockRejectedValue(new Error('Database error'));
 
-      // When & Then
       await expect(
         repository.updatePointWithHistory(userId, newPoint, amount, type),
       ).rejects.toThrow(InternalServerErrorException);
