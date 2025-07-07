@@ -127,18 +127,18 @@ describe('PointRepository', () => {
         timeMillis: 123456789,
       });
 
-      expect(pointHistoryTable.insert).toHaveBeenCalledWith(
-        userId,
-        amount,
-        type,
-        123456789,
-      );
-
       const result = await repository.updatePointWithHistory(
         userId,
         newPoint,
         amount,
         type,
+      );
+
+      expect(pointHistoryTable.insert).toHaveBeenCalledWith(
+        userId,
+        amount,
+        type,
+        123456789,
       );
 
       expect(result).toEqual(expectedUserPoint);
