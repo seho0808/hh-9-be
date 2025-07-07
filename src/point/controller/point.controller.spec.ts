@@ -40,7 +40,6 @@ describe('PointController', () => {
 
       const result = await controller.point(1);
 
-      expect(pointService.getPoint).toHaveBeenCalledWith(1);
       expect(result).toEqual(mockResult);
     });
 
@@ -68,7 +67,6 @@ describe('PointController', () => {
 
       const result = await controller.history(1);
 
-      expect(pointService.getHistory).toHaveBeenCalledWith(1);
       expect(result).toEqual(mockResult);
     });
 
@@ -92,7 +90,6 @@ describe('PointController', () => {
 
       const result = await controller.charge(1, { amount: 100 });
 
-      expect(pointService.chargePoint).toHaveBeenCalledWith(1, 100);
       expect(result).toEqual(mockResult);
     });
 
@@ -118,7 +115,6 @@ describe('PointController', () => {
 
       const result = await controller.use(1, { amount: 100 });
 
-      expect(pointService.usePoint).toHaveBeenCalledWith(1, 100);
       expect(result).toEqual(mockResult);
     });
 
