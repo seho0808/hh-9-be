@@ -40,11 +40,11 @@ export class PointService {
     this.policy.checkUseAmount(amount);
 
     const userPoint = await this.repository.getUserPoint(id);
-    const histories = await this.repository.getHistories(id);
+    this.policy.checkSufficientBalance(userPoint.point, amount);
 
+    const histories = await this.repository.getHistories(id);
     const pointsUsedToday = this.calculateDailyUsedPoints(histories);
     this.policy.checkDailyUseLimit(pointsUsedToday, amount);
-    this.policy.checkSufficientBalance(userPoint.point, amount);
 
     const newPoint = userPoint.point - amount;
     return await this.repository.updatePointWithHistory(
