@@ -6,10 +6,10 @@ import {
 
 @Injectable()
 export class PointPolicy {
-  private static readonly MAX_POINT_LIMIT = 10_000_000;
-  private static readonly DAILY_USE_LIMIT = 50_000;
-  private static readonly MIN_USE_AMOUNT = 100;
-  private static readonly USE_AMOUNT_UNIT = 100;
+  public static readonly MAX_POINT_LIMIT = 10_000_000;
+  public static readonly DAILY_USE_LIMIT = 50_000;
+  public static readonly MIN_USE_AMOUNT = 100;
+  public static readonly USE_AMOUNT_UNIT = 100;
 
   checkPointRange(point: number): void {
     if (point < 0 || point > PointPolicy.MAX_POINT_LIMIT) {

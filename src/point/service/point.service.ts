@@ -24,10 +24,10 @@ export class PointService {
   async chargePoint(id: number, amount: number): Promise<UserPoint> {
     this.policy.checkChargeAmount(amount);
 
-    const currentPoint = await this.repository.getUserPoint(id);
-    this.policy.checkChargeLimit(currentPoint.point, amount);
+    const userPoint = await this.repository.getUserPoint(id);
+    this.policy.checkChargeLimit(userPoint.point, amount);
 
-    const newPoint = currentPoint.point + amount;
+    const newPoint = userPoint.point + amount;
     return await this.repository.updatePointWithHistory(
       id,
       newPoint,
@@ -39,14 +39,14 @@ export class PointService {
   async usePoint(id: number, amount: number): Promise<UserPoint> {
     this.policy.checkUseAmount(amount);
 
-    const currentPoint = await this.repository.getUserPoint(id);
-    const histories = await this.repository.getHistories(id);
+    const userPoint = await this.repository.getUserPoint(id);
+    this.policy.checkSufficientBalance(userPoint.point, amount);
 
+    const histories = await this.repository.getHistories(id);
     const pointsUsedToday = this.calculateDailyUsedPoints(histories);
     this.policy.checkDailyUseLimit(pointsUsedToday, amount);
-    this.policy.checkSufficientBalance(currentPoint.point, amount);
 
-    const newPoint = currentPoint.point - amount;
+    const newPoint = userPoint.point - amount;
     return await this.repository.updatePointWithHistory(
       id,
       newPoint,
