@@ -24,7 +24,7 @@ describe('ParsePositiveIntPipe', () => {
     expect(() => pipe.transform(input)).toThrow('Number exceeds maximum safe integer');
   };
 
-  describe('✅ 정상 입력 - 성공 케이스', () => {
+  describe('transform', () => {
     describe('기본 양의 정수', () => {
       it('"1"을 1로 변환해야 한다', () => {
         expectValidTransform('1', 1);
@@ -49,7 +49,7 @@ describe('ParsePositiveIntPipe', () => {
       });
     });
 
-    describe('경계값 테스트', () => {
+    describe('경계값', () => {
       it('최소 양의 정수 1을 정상 변환해야 한다', () => {
         expectValidTransform('1', 1);
       });
@@ -58,9 +58,7 @@ describe('ParsePositiveIntPipe', () => {
         expectValidTransform('9007199254740991', 9007199254740991); // Number.MAX_SAFE_INTEGER
       });
     });
-  });
 
-  describe('❌ 잘못된 입력 - 에러 케이스', () => {
     describe('0과 음수', () => {
       it('0일 때 BadRequestException을 발생시켜야 한다', () => {
         expectInvalidTransform('0');

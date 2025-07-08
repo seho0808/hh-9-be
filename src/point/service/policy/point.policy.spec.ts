@@ -14,7 +14,7 @@ describe('PointPolicy', () => {
   });
 
   describe('checkPointRange', () => {
-    it('포인트가 유효한 범위(0 이상)일 때 성공해야 한다', () => {
+    it('포인트가 유효한 범위(0 이상, 최대값 이하)일 때 성공해야 한다', () => {
       expect(() => pointPolicy.checkPointRange(0)).not.toThrow();
       expect(() => pointPolicy.checkPointRange(1000)).not.toThrow();
       expect(() =>
@@ -229,18 +229,18 @@ describe('PointPolicy', () => {
   });
 
   describe('상수 값 검증', () => {
+    // 이 테스트는 상수 값이 변경되었을 때 알 수 있도록 하는 안전장치입니다
     it('정의된 상수들이 올바른 값을 가져야 한다', () => {
-      // 이 테스트는 상수 값이 변경되었을 때 알 수 있도록 하는 안전장치입니다
       expect(() => pointPolicy.checkPointRange(10_000_000)).not.toThrow();
-      expect(() => pointPolicy.checkPointRange(10_000_000 + 1)).toThrow();
-
       expect(() => pointPolicy.checkDailyUseLimit(0, 50_000)).not.toThrow();
-      expect(() => pointPolicy.checkDailyUseLimit(0, 50_000 + 1)).toThrow();
-
       expect(() => pointPolicy.checkUseAmount(100)).not.toThrow();
-      expect(() => pointPolicy.checkUseAmount(100 - 1)).toThrow();
-
       expect(() => pointPolicy.checkUseAmount(200)).not.toThrow();
+    });
+
+    it('상수 경계값을 벗어나면 예외가 발생해야 한다', () => {
+      expect(() => pointPolicy.checkPointRange(10_000_000 + 1)).toThrow();
+      expect(() => pointPolicy.checkDailyUseLimit(0, 50_000 + 1)).toThrow();
+      expect(() => pointPolicy.checkUseAmount(100 - 1)).toThrow();
       expect(() => pointPolicy.checkUseAmount(200 + 50)).toThrow();
     });
   });
