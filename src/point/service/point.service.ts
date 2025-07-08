@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PointHistory, TransactionType, UserPoint } from '../point.model';
 import { PointPolicy } from './policy/point.policy';
-import { PointRepository } from '../repository/point.repository';
+import { PointRepository } from '../point.repository';
 
 @Injectable()
 export class PointService {
