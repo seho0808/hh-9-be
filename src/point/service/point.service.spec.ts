@@ -3,7 +3,7 @@ import { PointService } from './point.service';
 import { BadRequestException, InternalServerErrorException } from '@nestjs/common';
 import { TransactionType } from '../point.model';
 import { PointPolicy } from './policy/point.policy';
-import { PointRepository } from '../repository/point.repository';
+import { PointRepository } from '../point.repository';
 
 describe('PointService', () => {
   let service: PointService;

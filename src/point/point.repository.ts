@@ -1,5 +1,5 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
-import { PointHistory, TransactionType, UserPoint } from '../point.model';
+import { PointHistory, TransactionType, UserPoint } from './point.model';
 import { UserPointTable } from 'src/database/userpoint.table';
 import { PointHistoryTable } from 'src/database/pointhistory.table';
 
