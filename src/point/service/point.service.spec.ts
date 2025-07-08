@@ -31,7 +31,7 @@ describe('PointService', () => {
   });
 
   describe('getPoint', () => {
-    it('포인트가 100일 경우 정상적으로 반환됨', async () => {
+    it('포인트가 100일 경우 정상적으로 반환되어야 한다', async () => {
       jest.spyOn(pointRepository, 'getUserPoint').mockResolvedValue({
         id: 1,
         point: 100,
@@ -47,7 +47,7 @@ describe('PointService', () => {
       });
     });
 
-    it('포인트가 0일 경우에도 정상 반환됨', async () => {
+    it('포인트가 0일 경우에도 정상 반환되어야 한다', async () => {
       jest.spyOn(pointRepository, 'getUserPoint').mockResolvedValue({
         id: 1,
         point: 0,
@@ -63,7 +63,7 @@ describe('PointService', () => {
       });
     });
 
-    it('포인트가 최대 허용값(10,000,000)일 때도 정상 반환됨', async () => {
+    it('포인트가 최대 허용값(10,000,000)일 때도 정상 반환되어야 한다', async () => {
       jest.spyOn(pointRepository, 'getUserPoint').mockResolvedValue({
         id: 1,
         point: 10_000_000,
@@ -79,7 +79,7 @@ describe('PointService', () => {
       });
     });
 
-    it('포인트가 음수일 경우 500 에러 발생', async () => {
+    it('포인트가 음수일 경우 500 에러가 발생해야 한다', async () => {
       jest.spyOn(pointRepository, 'getUserPoint').mockResolvedValue({
         id: 1,
         point: -1,
@@ -89,7 +89,7 @@ describe('PointService', () => {
       await expect(service.getPoint(1)).rejects.toThrow(InternalServerErrorException);
     });
 
-    it('포인트가 최대 허용값 초과 시 500 에러 발생', async () => {
+    it('포인트가 최대 허용값 초과 시 500 에러가 발생해야 한다', async () => {
       jest.spyOn(pointRepository, 'getUserPoint').mockResolvedValue({
         id: 1,
         point: 10_000_001,
@@ -99,7 +99,7 @@ describe('PointService', () => {
       await expect(service.getPoint(1)).rejects.toThrow(InternalServerErrorException);
     });
 
-    it('Repository에서 예외가 발생하면 InternalServerError 발생', async () => {
+    it('Repository에서 예외가 발생하면 InternalServerError가 발생해야 한다', async () => {
       jest
         .spyOn(pointRepository, 'getUserPoint')
         .mockRejectedValue(new InternalServerErrorException());
@@ -109,7 +109,7 @@ describe('PointService', () => {
   });
 
   describe('getHistory', () => {
-    it('포인트 내역이 정상적으로 반환됨', async () => {
+    it('포인트 내역이 정상적으로 반환되어야 한다', async () => {
       const mockedPointHistory = {
         id: 1,
         userId: 1,
@@ -124,7 +124,7 @@ describe('PointService', () => {
       expect(result).toEqual([mockedPointHistory]);
     });
 
-    it('포인트 내역이 최신순으로 정렬되어 반환됨', async () => {
+    it('포인트 내역이 최신순으로 정렬되어 반환되어야 한다', async () => {
       const mockedPointHistory1 = {
         id: 1,
         userId: 1,
@@ -148,7 +148,7 @@ describe('PointService', () => {
       expect(result).toEqual([mockedPointHistory2, mockedPointHistory1]);
     });
 
-    it('Repository에서 예외가 발생하면 InternalServerError 발생', async () => {
+    it('Repository에서 예외가 발생하면 InternalServerError가 발생해야 한다', async () => {
       jest
         .spyOn(pointRepository, 'getHistories')
         .mockRejectedValue(new InternalServerErrorException());
@@ -158,7 +158,7 @@ describe('PointService', () => {
   });
 
   describe('chargePoint', () => {
-    it('포인트가 정상적으로 충전됨', async () => {
+    it('포인트가 정상적으로 충전되어야 한다', async () => {
       jest.spyOn(pointRepository, 'getUserPoint').mockResolvedValue({
         id: 1,
         point: 100,
@@ -181,7 +181,7 @@ describe('PointService', () => {
       );
     });
 
-    it('최소 충전 금액이 정상적으로 충전됨', async () => {
+    it('최소 충전 금액이 정상적으로 충전되어야 한다', async () => {
       jest.spyOn(pointRepository, 'getUserPoint').mockResolvedValue({
         id: 1,
         point: 100,
@@ -204,7 +204,7 @@ describe('PointService', () => {
       );
     });
 
-    it('최대 충전 금액이 정상적으로 충전됨', async () => {
+    it('최대 충전 금액이 정상적으로 충전되어야 한다', async () => {
       jest.spyOn(pointRepository, 'getUserPoint').mockResolvedValue({
         id: 1,
         point: 0,
@@ -227,7 +227,7 @@ describe('PointService', () => {
       );
     });
 
-    it('충전 후 총 포인트가 10,000,000P 초과 시 400 에러 발생', async () => {
+    it('충전 후 총 포인트가 10,000,000P 초과 시 400 에러가 발생해야 한다', async () => {
       jest.spyOn(pointRepository, 'getUserPoint').mockResolvedValue({
         id: 1,
         point: 10_000_000,
@@ -237,12 +237,12 @@ describe('PointService', () => {
       await expect(service.chargePoint(1, 1)).rejects.toThrow(BadRequestException);
     });
 
-    it('포인트가 최소 충전 가능 포인트보다 작을 경우 400 에러 발생', async () => {
+    it('포인트가 최소 충전 가능 포인트보다 작을 경우 400 에러가 발생해야 한다', async () => {
       await expect(service.chargePoint(1, -1)).rejects.toThrow(BadRequestException);
       await expect(service.chargePoint(1, 0)).rejects.toThrow(BadRequestException);
     });
 
-    it('Repository에서 예외가 발생하면 InternalServerError 발생', async () => {
+    it('Repository에서 예외가 발생하면 InternalServerError가 발생해야 한다', async () => {
       jest
         .spyOn(pointRepository, 'getUserPoint')
         .mockRejectedValue(new InternalServerErrorException());
@@ -254,7 +254,7 @@ describe('PointService', () => {
   });
 
   describe('usePoint', () => {
-    it('포인트가 정상적으로 사용됨', async () => {
+    it('포인트가 정상적으로 사용되어야 한다', async () => {
       jest.spyOn(pointRepository, 'getUserPoint').mockResolvedValue({
         id: 1,
         point: 1000,
@@ -278,7 +278,7 @@ describe('PointService', () => {
       );
     });
 
-    it('최소 사용 단위(100P) 금액이 정상적으로 사용됨', async () => {
+    it('최소 사용 단위(100P) 금액이 정상적으로 사용되어야 한다', async () => {
       jest.spyOn(pointRepository, 'getUserPoint').mockResolvedValue({
         id: 1,
         point: 100,
@@ -302,7 +302,7 @@ describe('PointService', () => {
       );
     });
 
-    it('최대 사용 금액(10,000P)이 정상적으로 사용됨', async () => {
+    it('최대 사용 금액(10,000P)이 정상적으로 사용되어야 한다', async () => {
       jest.spyOn(pointRepository, 'getUserPoint').mockResolvedValue({
         id: 1,
         point: 5_000_000,
@@ -326,7 +326,7 @@ describe('PointService', () => {
       );
     });
 
-    it('포인트가 최소 사용 단위(100P)보다 작을 경우 400 에러 발생', async () => {
+    it('포인트가 최소 사용 단위(100P)보다 작을 경우 400 에러가 발생해야 한다', async () => {
       jest.spyOn(pointRepository, 'getUserPoint').mockResolvedValue({
         id: 1,
         point: 1000,
@@ -339,7 +339,7 @@ describe('PointService', () => {
       await expect(service.usePoint(1, 101)).rejects.toThrow(BadRequestException);
     });
 
-    it('포인트 사용 후 포인트가 음수가 될 경우 400 에러 발생', async () => {
+    it('포인트 사용 후 포인트가 음수가 될 경우 400 에러가 발생해야 한다', async () => {
       jest.spyOn(pointRepository, 'getHistories').mockResolvedValue([]);
       jest.spyOn(pointRepository, 'getUserPoint').mockResolvedValue({
         id: 1,
@@ -350,7 +350,7 @@ describe('PointService', () => {
       await expect(service.usePoint(1, 200)).rejects.toThrow(BadRequestException);
     });
 
-    it('하루 최대 사용 가능 포인트를 초과할 경우 400 에러 발생', async () => {
+    it('하루 최대 사용 가능 포인트를 초과할 경우 400 에러가 발생해야 한다', async () => {
       jest.spyOn(pointRepository, 'getUserPoint').mockResolvedValue({
         id: 1,
         point: 100000,
@@ -378,7 +378,7 @@ describe('PointService', () => {
       await expect(service.usePoint(1, 100)).rejects.toThrow(BadRequestException);
     });
 
-    it('Repository에서 예외가 발생하면 InternalServerError 발생', async () => {
+    it('Repository에서 예외가 발생하면 InternalServerError가 발생해야 한다', async () => {
       jest
         .spyOn(pointRepository, 'getUserPoint')
         .mockRejectedValue(new InternalServerErrorException());

@@ -30,7 +30,7 @@ describe('PointController', () => {
   });
 
   describe('GET /point/:id', () => {
-    it('서비스의 getPoint 메서드를 호출하고 결과를 반환함', async () => {
+    it('서비스의 getPoint 메서드를 호출하고 결과를 반환해야 한다', async () => {
       const mockResult = {
         id: 1,
         point: 100,
@@ -43,7 +43,7 @@ describe('PointController', () => {
       expect(result).toEqual(mockResult);
     });
 
-    it('서비스에서 예외가 발생하면 그대로 전파됨', async () => {
+    it('서비스에서 예외가 발생하면 그대로 전파되어야 한다', async () => {
       jest
         .spyOn(pointService, 'getPoint')
         .mockRejectedValue(new InternalServerErrorException());
@@ -53,7 +53,7 @@ describe('PointController', () => {
   });
 
   describe('GET /point/:id/histories', () => {
-    it('서비스의 getHistory 메서드를 호출하고 결과를 반환함', async () => {
+    it('서비스의 getHistory 메서드를 호출하고 결과를 반환해야 한다', async () => {
       const mockResult = [
         {
           id: 1,
@@ -70,7 +70,7 @@ describe('PointController', () => {
       expect(result).toEqual(mockResult);
     });
 
-    it('서비스에서 예외가 발생하면 그대로 전파됨', async () => {
+    it('서비스에서 예외가 발생하면 그대로 전파되어야 한다', async () => {
       jest
         .spyOn(pointService, 'getHistory')
         .mockRejectedValue(new InternalServerErrorException());
@@ -80,7 +80,7 @@ describe('PointController', () => {
   });
 
   describe('PATCH /point/:id/charge', () => {
-    it('서비스의 chargePoint 메서드를 호출하고 결과를 반환함', async () => {
+    it('서비스의 chargePoint 메서드를 호출하고 결과를 반환해야 한다', async () => {
       const mockResult = {
         id: 1,
         point: 200,
@@ -93,7 +93,7 @@ describe('PointController', () => {
       expect(result).toEqual(mockResult);
     });
 
-    it('서비스에서 예외가 발생하면 그대로 전파됨', async () => {
+    it('서비스에서 예외가 발생하면 그대로 전파되어야 한다', async () => {
       jest
         .spyOn(pointService, 'chargePoint')
         .mockRejectedValue(new BadRequestException());
@@ -105,7 +105,7 @@ describe('PointController', () => {
   });
 
   describe('PATCH /point/:id/use', () => {
-    it('서비스의 usePoint 메서드를 호출하고 결과를 반환함', async () => {
+    it('서비스의 usePoint 메서드를 호출하고 결과를 반환해야 한다', async () => {
       const mockResult = {
         id: 1,
         point: 900,
@@ -118,7 +118,7 @@ describe('PointController', () => {
       expect(result).toEqual(mockResult);
     });
 
-    it('서비스에서 예외가 발생하면 그대로 전파됨', async () => {
+    it('서비스에서 예외가 발생하면 그대로 전파되어야 한다', async () => {
       jest.spyOn(pointService, 'usePoint').mockRejectedValue(new BadRequestException());
 
       await expect(controller.use(1, { amount: 100 })).rejects.toThrow(
