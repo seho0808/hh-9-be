@@ -1,5 +1,5 @@
-import { BadRequestException } from '@nestjs/common';
 import { ParsePositiveIntPipe } from './parse-positive-int.pipe';
+import { ValidationException } from '../exceptions';
 
 describe('ParsePositiveIntPipe', () => {
   let pipe: ParsePositiveIntPipe;
@@ -15,12 +15,12 @@ describe('ParsePositiveIntPipe', () => {
   };
 
   const expectInvalidTransform = (input: string) => {
-    expect(() => pipe.transform(input)).toThrow(BadRequestException);
+    expect(() => pipe.transform(input)).toThrow(ValidationException);
     expect(() => pipe.transform(input)).toThrow('Only positive integers are allowed');
   };
 
   const expectMaxSafeIntegerExceededError = (input: string) => {
-    expect(() => pipe.transform(input)).toThrow(BadRequestException);
+    expect(() => pipe.transform(input)).toThrow(ValidationException);
     expect(() => pipe.transform(input)).toThrow('Number exceeds maximum safe integer');
   };
 

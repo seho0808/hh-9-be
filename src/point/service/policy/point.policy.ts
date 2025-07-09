@@ -1,8 +1,12 @@
+import { Injectable } from '@nestjs/common';
 import {
-  BadRequestException,
-  Injectable,
-  InternalServerErrorException,
-} from '@nestjs/common';
+  InvalidChargeAmountException,
+  PointLimitExceededException,
+  InvalidUseAmountException,
+  DailyUseLimitExceededException,
+  InsufficientBalanceException,
+  InvalidPointRangeException,
+} from 'src/common/exceptions';
 
 @Injectable()
 export class PointPolicy {
@@ -13,19 +17,19 @@ export class PointPolicy {
 
   checkPointRange(point: number): void {
     if (point < 0 || point > PointPolicy.MAX_POINT_LIMIT) {
-      throw new InternalServerErrorException('비정상 포인트 범위');
+      throw new InvalidPointRangeException();
     }
   }
 
   checkChargeAmount(amount: number): void {
     if (amount < 1 || amount > PointPolicy.MAX_POINT_LIMIT) {
-      throw new BadRequestException('충전 금액이 유효하지 않습니다.');
+      throw new InvalidChargeAmountException();
     }
   }
 
   checkChargeLimit(currentPoint: number, amount: number): void {
     if (currentPoint + amount > PointPolicy.MAX_POINT_LIMIT) {
-      throw new BadRequestException('포인트 한도 초과');
+      throw new PointLimitExceededException();
     }
   }
 
@@ -35,19 +39,19 @@ export class PointPolicy {
       amount > PointPolicy.MAX_POINT_LIMIT ||
       amount % PointPolicy.USE_AMOUNT_UNIT !== 0
     ) {
-      throw new BadRequestException('포인트 사용 단위 오류');
+      throw new InvalidUseAmountException();
     }
   }
 
   checkDailyUseLimit(pointsUsedToday: number, amount: number): void {
     if (pointsUsedToday + amount > PointPolicy.DAILY_USE_LIMIT) {
-      throw new BadRequestException('일일 사용 한도 초과');
+      throw new DailyUseLimitExceededException();
     }
   }
 
   checkSufficientBalance(currentPoint: number, amount: number): void {
     if (currentPoint < amount) {
-      throw new BadRequestException('잔액 부족');
+      throw new InsufficientBalanceException();
     }
   }
 }
