@@ -1,4 +1,5 @@
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { SystemException } from 'src/common/exceptions';
 import { PointHistory, TransactionType, UserPoint } from './point.model';
 import { UserPointTable } from 'src/database/userpoint.table';
 import { PointHistoryTable } from 'src/database/pointhistory.table';
@@ -14,7 +15,7 @@ export class PointRepository {
     try {
       return await this.userDb.selectById(id);
     } catch (error) {
-      throw new InternalServerErrorException();
+      throw new SystemException();
     }
   }
 
@@ -22,7 +23,7 @@ export class PointRepository {
     try {
       return await this.historyDb.selectAllByUserId(id);
     } catch (error) {
-      throw new InternalServerErrorException();
+      throw new SystemException();
     }
   }
 
@@ -37,7 +38,7 @@ export class PointRepository {
       await this.historyDb.insert(id, amount, type, Date.now());
       return updatedPoint;
     } catch (error) {
-      throw new InternalServerErrorException();
+      throw new SystemException();
     }
   }
 }

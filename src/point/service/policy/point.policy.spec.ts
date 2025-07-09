@@ -1,5 +1,12 @@
-import { BadRequestException, InternalServerErrorException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
+import {
+  InvalidChargeAmountException,
+  PointLimitExceededException,
+  InvalidUseAmountException,
+  DailyUseLimitExceededException,
+  InsufficientBalanceException,
+  InvalidPointRangeException,
+} from 'src/common/exceptions';
 import { PointPolicy } from './point.policy';
 
 describe('PointPolicy', () => {
@@ -23,18 +30,16 @@ describe('PointPolicy', () => {
     });
 
     it('포인트가 0 미만일 때 예외를 발생시켜야 한다', () => {
-      expect(() => pointPolicy.checkPointRange(-1)).toThrow(InternalServerErrorException);
-      expect(() => pointPolicy.checkPointRange(-100)).toThrow(
-        InternalServerErrorException,
-      );
+      expect(() => pointPolicy.checkPointRange(-1)).toThrow(InvalidPointRangeException);
+      expect(() => pointPolicy.checkPointRange(-100)).toThrow(InvalidPointRangeException);
     });
 
     it('포인트가 최대 한도를 초과할 때 예외를 발생시켜야 한다', () => {
       expect(() => pointPolicy.checkPointRange(PointPolicy.MAX_POINT_LIMIT + 1)).toThrow(
-        InternalServerErrorException,
+        InvalidPointRangeException,
       );
       expect(() => pointPolicy.checkPointRange(PointPolicy.MAX_POINT_LIMIT * 2)).toThrow(
-        InternalServerErrorException,
+        InvalidPointRangeException,
       );
     });
 
@@ -56,17 +61,21 @@ describe('PointPolicy', () => {
     });
 
     it('충전 금액이 1 미만일 때 예외를 발생시켜야 한다', () => {
-      expect(() => pointPolicy.checkChargeAmount(0)).toThrow(BadRequestException);
-      expect(() => pointPolicy.checkChargeAmount(-1)).toThrow(BadRequestException);
+      expect(() => pointPolicy.checkChargeAmount(0)).toThrow(
+        InvalidChargeAmountException,
+      );
+      expect(() => pointPolicy.checkChargeAmount(-1)).toThrow(
+        InvalidChargeAmountException,
+      );
     });
 
     it('충전 금액이 최대 한도를 초과할 때 예외를 발생시켜야 한다', () => {
       expect(() =>
         pointPolicy.checkChargeAmount(PointPolicy.MAX_POINT_LIMIT + 1),
-      ).toThrow(BadRequestException);
+      ).toThrow(InvalidChargeAmountException);
       expect(() =>
         pointPolicy.checkChargeAmount(PointPolicy.MAX_POINT_LIMIT * 2),
-      ).toThrow(BadRequestException);
+      ).toThrow(InvalidChargeAmountException);
     });
 
     it('예외 메시지가 올바른지 확인해야 한다', () => {
@@ -96,9 +105,9 @@ describe('PointPolicy', () => {
           5_000_000,
           PointPolicy.MAX_POINT_LIMIT - 5_000_000 + 1,
         ),
-      ).toThrow(BadRequestException);
+      ).toThrow(PointLimitExceededException);
       expect(() => pointPolicy.checkChargeLimit(PointPolicy.MAX_POINT_LIMIT, 1)).toThrow(
-        BadRequestException,
+        PointLimitExceededException,
       );
     });
 
@@ -126,31 +135,31 @@ describe('PointPolicy', () => {
 
     it('사용 금액이 최소 금액 미만일 때 예외를 발생시켜야 한다', () => {
       expect(() => pointPolicy.checkUseAmount(PointPolicy.MIN_USE_AMOUNT - 1)).toThrow(
-        BadRequestException,
+        InvalidUseAmountException,
       );
-      expect(() => pointPolicy.checkUseAmount(0)).toThrow(BadRequestException);
-      expect(() => pointPolicy.checkUseAmount(-1)).toThrow(BadRequestException);
+      expect(() => pointPolicy.checkUseAmount(0)).toThrow(InvalidUseAmountException);
+      expect(() => pointPolicy.checkUseAmount(-1)).toThrow(InvalidUseAmountException);
     });
 
     it('사용 금액이 최대 한도를 초과할 때 예외를 발생시켜야 한다', () => {
       expect(() => pointPolicy.checkUseAmount(PointPolicy.MAX_POINT_LIMIT + 1)).toThrow(
-        BadRequestException,
+        InvalidUseAmountException,
       );
       expect(() => pointPolicy.checkUseAmount(PointPolicy.MAX_POINT_LIMIT * 2)).toThrow(
-        BadRequestException,
+        InvalidUseAmountException,
       );
     });
 
     it('사용 금액이 100 단위가 아닐 때 예외를 발생시켜야 한다', () => {
       expect(() => pointPolicy.checkUseAmount(PointPolicy.MIN_USE_AMOUNT + 1)).toThrow(
-        BadRequestException,
+        InvalidUseAmountException,
       );
       expect(() => pointPolicy.checkUseAmount(PointPolicy.USE_AMOUNT_UNIT + 50)).toThrow(
-        BadRequestException,
+        InvalidUseAmountException,
       );
       expect(() =>
         pointPolicy.checkUseAmount(PointPolicy.USE_AMOUNT_UNIT * 10 - 1),
-      ).toThrow(BadRequestException);
+      ).toThrow(InvalidUseAmountException);
     });
 
     it('예외 메시지가 올바른지 확인해야 한다', () => {
@@ -182,13 +191,13 @@ describe('PointPolicy', () => {
     it('일일 사용 한도를 초과할 때 예외를 발생시켜야 한다', () => {
       expect(() =>
         pointPolicy.checkDailyUseLimit(0, PointPolicy.DAILY_USE_LIMIT + 1),
-      ).toThrow(BadRequestException);
+      ).toThrow(DailyUseLimitExceededException);
       expect(() =>
         pointPolicy.checkDailyUseLimit(30_000, PointPolicy.DAILY_USE_LIMIT - 30_000 + 1),
-      ).toThrow(BadRequestException);
+      ).toThrow(DailyUseLimitExceededException);
       expect(() =>
         pointPolicy.checkDailyUseLimit(PointPolicy.DAILY_USE_LIMIT, 1),
-      ).toThrow(BadRequestException);
+      ).toThrow(DailyUseLimitExceededException);
     });
 
     it('예외 메시지가 올바른지 확인해야 한다', () => {
@@ -212,15 +221,17 @@ describe('PointPolicy', () => {
 
     it('잔액이 부족할 때 예외를 발생시켜야 한다', () => {
       expect(() => pointPolicy.checkSufficientBalance(999, 1000)).toThrow(
-        BadRequestException,
+        InsufficientBalanceException,
       );
-      expect(() => pointPolicy.checkSufficientBalance(0, 1)).toThrow(BadRequestException);
+      expect(() => pointPolicy.checkSufficientBalance(0, 1)).toThrow(
+        InsufficientBalanceException,
+      );
       expect(() =>
         pointPolicy.checkSufficientBalance(
           PointPolicy.MAX_POINT_LIMIT / 2,
           PointPolicy.MAX_POINT_LIMIT,
         ),
-      ).toThrow(BadRequestException);
+      ).toThrow(InsufficientBalanceException);
     });
 
     it('예외 메시지가 올바른지 확인해야 한다', () => {

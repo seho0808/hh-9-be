@@ -1,6 +1,14 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { PointService } from './point.service';
-import { BadRequestException, InternalServerErrorException } from '@nestjs/common';
+import {
+  InvalidChargeAmountException,
+  PointLimitExceededException,
+  InvalidUseAmountException,
+  DailyUseLimitExceededException,
+  InsufficientBalanceException,
+  InvalidPointRangeException,
+  SystemException,
+} from 'src/common/exceptions';
 import { TransactionType } from '../point.model';
 import { PointPolicy } from './policy/point.policy';
 import { PointRepository } from '../point.repository';
@@ -86,7 +94,7 @@ describe('PointService', () => {
         updateMillis: 123456789,
       });
 
-      await expect(service.getPoint(1)).rejects.toThrow(InternalServerErrorException);
+      await expect(service.getPoint(1)).rejects.toThrow(InvalidPointRangeException);
     });
 
     it('포인트가 최대 허용값 초과 시 500 에러가 발생해야 한다', async () => {
@@ -96,15 +104,15 @@ describe('PointService', () => {
         updateMillis: 123456789,
       });
 
-      await expect(service.getPoint(1)).rejects.toThrow(InternalServerErrorException);
+      await expect(service.getPoint(1)).rejects.toThrow(InvalidPointRangeException);
     });
 
-    it('Repository에서 예외가 발생하면 InternalServerError가 발생해야 한다', async () => {
+    it('Repository에서 예외가 발생하면 SystemException이 발생해야 한다', async () => {
       jest
         .spyOn(pointRepository, 'getUserPoint')
-        .mockRejectedValue(new InternalServerErrorException());
+        .mockRejectedValue(new SystemException());
 
-      await expect(service.getPoint(1)).rejects.toThrow(InternalServerErrorException);
+      await expect(service.getPoint(1)).rejects.toThrow(SystemException);
     });
   });
 
@@ -148,12 +156,12 @@ describe('PointService', () => {
       expect(result).toEqual([mockedPointHistory2, mockedPointHistory1]);
     });
 
-    it('Repository에서 예외가 발생하면 InternalServerError가 발생해야 한다', async () => {
+    it('Repository에서 예외가 발생하면 SystemException이 발생해야 한다', async () => {
       jest
         .spyOn(pointRepository, 'getHistories')
-        .mockRejectedValue(new InternalServerErrorException());
+        .mockRejectedValue(new SystemException());
 
-      await expect(service.getHistory(1)).rejects.toThrow(InternalServerErrorException);
+      await expect(service.getHistory(1)).rejects.toThrow(SystemException);
     });
   });
 
@@ -234,22 +242,26 @@ describe('PointService', () => {
         updateMillis: 123456789,
       });
 
-      await expect(service.chargePoint(1, 1)).rejects.toThrow(BadRequestException);
+      await expect(service.chargePoint(1, 1)).rejects.toThrow(
+        PointLimitExceededException,
+      );
     });
 
     it('포인트가 최소 충전 가능 포인트보다 작을 경우 400 에러가 발생해야 한다', async () => {
-      await expect(service.chargePoint(1, -1)).rejects.toThrow(BadRequestException);
-      await expect(service.chargePoint(1, 0)).rejects.toThrow(BadRequestException);
+      await expect(service.chargePoint(1, -1)).rejects.toThrow(
+        InvalidChargeAmountException,
+      );
+      await expect(service.chargePoint(1, 0)).rejects.toThrow(
+        InvalidChargeAmountException,
+      );
     });
 
-    it('Repository에서 예외가 발생하면 InternalServerError가 발생해야 한다', async () => {
+    it('Repository에서 예외가 발생하면 SystemException이 발생해야 한다', async () => {
       jest
         .spyOn(pointRepository, 'getUserPoint')
-        .mockRejectedValue(new InternalServerErrorException());
+        .mockRejectedValue(new SystemException());
 
-      await expect(service.chargePoint(1, 100)).rejects.toThrow(
-        InternalServerErrorException,
-      );
+      await expect(service.chargePoint(1, 100)).rejects.toThrow(SystemException);
     });
   });
 
@@ -333,10 +345,10 @@ describe('PointService', () => {
         updateMillis: 123456789,
       });
 
-      await expect(service.usePoint(1, 99)).rejects.toThrow(BadRequestException);
-      await expect(service.usePoint(1, 0)).rejects.toThrow(BadRequestException);
-      await expect(service.usePoint(1, -1)).rejects.toThrow(BadRequestException);
-      await expect(service.usePoint(1, 101)).rejects.toThrow(BadRequestException);
+      await expect(service.usePoint(1, 99)).rejects.toThrow(InvalidUseAmountException);
+      await expect(service.usePoint(1, 0)).rejects.toThrow(InvalidUseAmountException);
+      await expect(service.usePoint(1, -1)).rejects.toThrow(InvalidUseAmountException);
+      await expect(service.usePoint(1, 101)).rejects.toThrow(InvalidUseAmountException);
     });
 
     it('포인트 사용 후 포인트가 음수가 될 경우 400 에러가 발생해야 한다', async () => {
@@ -347,7 +359,9 @@ describe('PointService', () => {
         updateMillis: 123456789,
       });
 
-      await expect(service.usePoint(1, 200)).rejects.toThrow(BadRequestException);
+      await expect(service.usePoint(1, 200)).rejects.toThrow(
+        InsufficientBalanceException,
+      );
     });
 
     it('하루 최대 사용 가능 포인트를 초과할 경우 400 에러가 발생해야 한다', async () => {
@@ -375,17 +389,17 @@ describe('PointService', () => {
       ]);
 
       // 이미 50000P를 사용했으므로 추가 사용 불가
-      await expect(service.usePoint(1, 100)).rejects.toThrow(BadRequestException);
+      await expect(service.usePoint(1, 100)).rejects.toThrow(
+        DailyUseLimitExceededException,
+      );
     });
 
-    it('Repository에서 예외가 발생하면 InternalServerError가 발생해야 한다', async () => {
+    it('Repository에서 예외가 발생하면 SystemException이 발생해야 한다', async () => {
       jest
         .spyOn(pointRepository, 'getUserPoint')
-        .mockRejectedValue(new InternalServerErrorException());
+        .mockRejectedValue(new SystemException());
 
-      await expect(service.usePoint(1, 100)).rejects.toThrow(
-        InternalServerErrorException,
-      );
+      await expect(service.usePoint(1, 100)).rejects.toThrow(SystemException);
     });
   });
 });
