@@ -1,11 +1,11 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { PointService } from '../service/point.service';
-import { PointRepository } from '../point.repository';
-import { PointPolicy } from '../service/policy/point.policy';
+import { PointService } from '../../../src/point/service/point.service';
+import { PointRepository } from '../../../src/point/point.repository';
+import { PointPolicy } from '../../../src/point/service/policy/point.policy';
 import { DatabaseModule } from 'src/database/database.module';
 import { UserPointTable } from 'src/database/userpoint.table';
 import { PointHistoryTable } from 'src/database/pointhistory.table';
-import { TransactionType } from '../point.model';
+import { TransactionType } from '../../../src/point/point.model';
 
 describe('PointService Concurrency Tests (Integration) - Charge', () => {
   let service: PointService;
