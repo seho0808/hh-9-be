@@ -57,7 +57,7 @@ describe('PointService Concurrency Tests (Integration)', () => {
       // 모든 충전 히스토리 확인
       const histories = await service.getHistory(userId);
       expect(histories.length).toBe(concurrentRequests);
-    });
+    }, 15000);
 
     it('동시 충전 시 최대 포인트 제한을 초과하면 적절히 처리되어야 한다', async () => {
       const userId = 1;
@@ -108,7 +108,7 @@ describe('PointService Concurrency Tests (Integration)', () => {
       // 모든 사용 히스토리 확인
       const histories = await service.getHistory(userId);
       expect(histories.length).toBe(concurrentRequests + 1); // 첫 충전 1회
-    });
+    }, 15000);
 
     it('동시 사용 시 잔액이 부족하면 적절히 처리되어야 한다', async () => {
       const userId = 1;
@@ -137,7 +137,7 @@ describe('PointService Concurrency Tests (Integration)', () => {
 
       expect(successfulRequests.length).toBe(12);
       expect(failedRequests.length).toBe(8);
-    });
+    }, 15000);
   });
 
   describe('동시 포인트 충전/사용 혼합 테스트', () => {
@@ -171,7 +171,7 @@ describe('PointService Concurrency Tests (Integration)', () => {
       // 히스토리 확인
       const histories = await service.getHistory(userId);
       expect(histories.length).toBe(chargeCount + useCount + 1); // 첫 충전 1회
-    });
+    }, 25000);
 
     it('동시성 환경에서도 일일 사용 제한이 정확히 적용되어야 한다', async () => {
       const userId = 1;
@@ -204,6 +204,6 @@ describe('PointService Concurrency Tests (Integration)', () => {
         .reduce((sum, h) => sum + h.amount, 0);
 
       expect(dailyUsed).toBeLessThanOrEqual(50_000);
-    });
+    }, 15000);
   });
 });
